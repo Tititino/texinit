@@ -1,108 +1,104 @@
 #!/usr/bin/bash
 
+# file path (the first argument)
 # -s n show template n
 # -t n use  template n (dafaults to 1)
-# file path (the first argument)
+# -n no ask
 
-TEMPLATE_DIR="$HOME/.local/texinit/"
+TEMPLATE_DIR="$HOME/.local/docinit"
 
-TEMPLATE=NULL
+TEMPLATE=""
 TO="out.tex"
 
 CHECK_FILE_RETURN=false
 ARG_T=false
 ARG_S=false
-ASK_OWRT=false
+ASK_OWRT=true
 FIRST_ONE=true
 
 
-function check_file() {
-	if [ -a $TO ] ; then
-		while true; do
-			read -p "this would overwrite a file, proceed? [y/N]" yn
-			case $yn in
-	    			[Yy]* )
-	        			CHECK_FILE_RETURN=false
-	        			exit;;
-	    			[Nn]* )
-	        			CHECK_FILE_RETURN=true
-	        			exit;;
-	    			*) echo "invalid answer."
-            		esac
-        	done	 
-    	fi
-    	CHECK_FILE_RETURN=false
-}    
-
-
 if [ ! -d $TEMPLATE_DIR ] ; then
-    	echo "creating $TEMPLATE_DIR ..."
-    	mkdir -p $TEMPLATE_DIR
+    echo "creating $TEMPLATE_DIR ..."
+    mkdir -p $TEMPLATE_DIR
 fi
 
 for arg in $@
 do
-    	if [ $FIRST_ONE ] ; then
-        	if [ -a arg ] ; then
-			FILE_NAME=arg
-			continue
-        	else
-			echo "file not found or not provided or not accessible, defaulting to out.tex"
-        	fi
-        	FIRST_ONE=false
-    	fi
-    	if [ ARG_T ] ; then
-        	if [ -a "$TEMPLATE_DIR/template$arg" ] ; then
-			TEMPLATE="$TEMPLATE_DIR/template$arg"
-        	else
-			echo "template not found, using default template"
-        	fi
-        	ARG_T=false
-        	continue
-    	fi
-    	if [ ARG_S ] ; then
-        	if [ -a "$TEMPLATE_DIR/template$arg" ] ; then
-			cat "$TEMPLATE_DIR/template$arg"
-        	else
-			echo "template not found in $TEMPLATE_DIR"
-        	fi
-        	ARG_S=false
-        	continue
-    	fi  
-	case arg in
-        	"--help" | "-h")
-			echo "not yet implemented"
-			break;;
-        	"--template" | "-t")
-			ARG_T=true
-			break;;
-        	"--show" | "-s")
-			ARG_S=true
-			break;;
-        	"--no-ask" | "-n")
-			ASK_OWRT=true
-			break;;
-        	*)
-			echo "invalid option, type --help or -h for help"
-			break;;
-	esac
+    if $ARG_T ; then
+        if [ -a "$TEMPLATE_DIR/template$arg" ] ; then
+	TEMPLATE="$TEMPLATE_DIR/template$arg"
+        else
+	echo "template not found, using default template"
+        fi
+        ARG_T=false
+    elif $ARG_S ; then
+        if [ -a "$TEMPLATE_DIR/template$arg" ] ; then
+	echo "ciao"
+	cat "$TEMPLATE_DIR/template$arg"
+        else
+	echo "template not found in $TEMPLATE_DIR"
+        fi
+        exit
+    else
+        case $arg in
+	"--help" | "-h")
+	    echo "not yet implemented"
+	    ;;
+	"--template" | "-t")
+                ARG_T=true
+	    ;;
+	"--show" | "-s")
+	    ARG_S=true
+	    ;;
+	"--no-ask" | "-n")
+	    ASK_OWRT=false
+	    ;;
+	*)
+	    if $FIRST_ONE ; then
+	        if [[ "$arg" =~ .+\.tex ]] ; then
+		TO="$arg"
+		continue
+	        else
+		echo "file not provided or not accessible, defaulting to out.tex"
+	        fi
+	        FIRST_ONE=false
+	    else
+	        echo "invalid option, type --help or -h for help"
+	    fi
+	    ;;
+        esac
+    fi
 done    
 
-if [ ! $ASK_OWRT ] ; then
-    	check_file
-fi    
-
-if [ $ASK_OWRT -o $CHECK_FILE_RETURN ] ; then
-    	if [ -n "$TEMPLATE" ] ; then
-        	echo "\documentclass[12pt]{article}" > $TO
-        	echo "\begin{document}" >> $TO
-        	echo "" >> $TO
-        	echo "\end{document}" >> $TO
-    	else
-        	cp "$TEMPLATE" "$TO"
-    	fi
+if $ASK_OWRT && [ -a $TO ] ; then
+    while true; do
+        read -p "this would overwrite a file, proceed? [y/N]" yn
+        case $yn in
+	[Yy]* )
+	    CHECK_FILE_RETURN=false
+	    break
+	    ;;
+	[Nn]* )
+	    CHECK_FILE_RETURN=true
+	    break
+	    ;;
+	*) echo "invalid answer."
+        esac
+    done	 
 else
-    	exit
+    CHECK_FILE_RETURN=false
+fi
+
+if ! $CHECK_FILE_RETURN ; then
+    if [ -n "$TEMPLATE" ] ; then
+        cp "$TEMPLATE" "$TO"
+    else
+        echo "\documentclass[12pt]{article}" > $TO
+        echo "\begin{document}" >> $TO
+        echo "" >> $TO
+        echo "\end{document}" >> $TO
+    fi
+else
+    echo "operation failed"
+    exit
 fi    
-
-
