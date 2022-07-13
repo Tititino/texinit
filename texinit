@@ -5,7 +5,7 @@
 # -t n use  template n (dafaults to 1)
 # -n no ask
 
-TEMPLATE_DIR="$HOME/.local/docinit"
+TEMPLATE_DIR="$HOME/.local/texinit"
 
 TEMPLATE=""
 TO="out.tex"
